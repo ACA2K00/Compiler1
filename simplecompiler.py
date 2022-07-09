@@ -116,7 +116,7 @@ def prog(tokens):
     # stmts(tokens)
     return root
 
-with open('readme.txt') as f:
+with open('input.txt') as f:
     content = f.read()
 tokens = Tokens()
 while not eof():
