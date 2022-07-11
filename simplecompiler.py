@@ -1,6 +1,8 @@
 from Tokens import Tokens
 from Node import Node
 
+#-------------------------------- Scanner Code
+# ans = token JSYK
 global content_index
 global content
 content_index = 0
@@ -23,7 +25,8 @@ def eof():
 
 def scan_digits():
     ans = {
-        'val': ''
+        'val': '',
+        'type': ''
     }
     while peek() in '0123456789':
         ans['val'] = ans['val'] + advance()
@@ -69,60 +72,110 @@ def scanner():
                 exit()
     return ans
 
-#------------------------------------------- Parser
-
-def stmt(tokens):
-    if tokens.peek()['type'] == 'id':
-        match(tokens, 'id')
-        match(tokens, 'assign')
-        val(tokens)
-        expr(tokens)
-    elif tokens.peek()['type'] == 'print':
-        match(tokens, 'print')
-        match(tokens, 'id')
+#------------------------------------------- Parser Code
+def val():
+    val_token = None
+    current = tokens.peek()
+    if current == "id" or current == "inum" or current == "fnum":
+      val_token = tokens.match(current)
     else:
-        print('ERROR')
+        print("ERROR: PARSING ERROR")
+        exit()
+    return [Node(val_token["type"], val_token["val"])]
 
-def stmts(tokens):
-    if tokens.peek()['type'] == 'id' or tokens.peek()['type'] == 'print':
-        node = Node(stmt(tokens))
-        return node + stmts(tokens)
-    elif tokens.peek()['type'] == '$':
-        return []
+def expr(val_node):
+    child_node = None
+    current = tokens.peek()
+    if current == "plus" or current == "minus": 
+      child_node = Node(current)
+      child_node.addChilds(val_node)
+      tokens.match(current)
+      next_val = val()
+      child_node.addChilds(expr(next_val))
+      return val_node
     else:
-        print('ERROR')
+      return []
 
+def stmt():
+    child_token = None
+    child_node = Node()
+    if tokens.peek() == 'id':
+      child_token = tokens.match('id')
+      tokens.match('assign')
+      child_node.setType('assign')
+      child_node.addChilds([Node(child_token['type'], child_token['val'])])
+      val_node = val()
+      child_node.addChilds(expr(val_node))
+    else:
+      if tokens.peek() == 'print':
+        tokens.match('print')
+        child_token = tokens.match('id')
+        child_node.setType('print')
+        child_node.setVal(child_token['val'])
+      else:
+        print("ERROR: PARSING ERROR")
+        exit()
+    return [child_node]
 
-def dcl(tokens):
-    if tokens.peek()['type'] == 'intdcl' or tokens.peek()['type'] == 'floatdcl':
-        node = Node(tokens.advance()['type'])
-        if tokens.peek()['type'] == 'id':
-            node.setVal(tokens.advance()['val'])
-            return [node]
-        else:
-            print('ERROR')
+def stmts():
+    childNodes = []
+    if tokens.peek() == 'id' or tokens.peek() == 'print':
+        childNodes += stmt()
+        childNodes += stmts()
+        return childNodes
+    else: 
+        if tokens.peek() != '$':
+            print("ERROR: PARSING ERROR")
             exit()
-    return []
+    return childNodes
 
-def dcls(tokens):
-    if tokens.peek()['type'] == 'intdcl' or tokens.peek()['type'] == 'floatdcl':
-        nodes = dcl(tokens)
-        return nodes + dcls(tokens)
-    return []
+def dcl():
+    type = ''
+    val = ''
+    current = tokens.peek()
+    if current == 'intdcl' or current == 'floatdcl':
+        type = tokens.match(current)['type']
+        val = tokens.match("id")['val']
+    else:
+        print("ERROR: PARSING ERROR")
+        exit()
+    return [Node(type, val)]
 
-def prog(tokens):
+def dcls():
+    childNodes = []
+    if tokens.peek() == 'intdcl' or tokens.peek() == 'floatdcl':
+        childNodes += dcl()
+        childNodes += dcls()
+        return childNodes
+    else:
+        return childNodes
+
+def prog():
     root = Node("prog")
-    root.addChilds(dcls(tokens))
-    # stmts(tokens)
+    root.addChilds(dcls())
+    root.addChilds(stmts())
     return root
 
+#------------------------------------------Compiler Code
+# Open & Read input File
 with open('input.txt') as f:
     content = f.read()
+
+# Call Scanner
 tokens = Tokens()
 while not eof():
     tokens.append(scanner())
 tokens.append(scanner())
 
-prog(tokens)
-#print(tokens.tokens)
-#TEST PUSH
+# Call Parser
+treeRoot = prog()
+
+print("Tree: \n", treeRoot, "\n")
+
+# Code Gen
+operations = treeRoot.codeGen()
+
+with open('output.txt', 'w') as f:
+    for line in operations:
+        f.write(line+'\n')
+
