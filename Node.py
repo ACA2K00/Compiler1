@@ -80,8 +80,8 @@ class Node:
             else:
                 operations.append(op_level + "=" + l_subOperations + "-" + r_subOperations)
         elif self.type == 'assign':
-            prev_op, current, subOperations = self.childs[1].subCodeGen(current+1)
-            operations.append(self.type[0].val + "=" + prev_op)
+            prev_op, current, subOperations = self.childs[0].subCodeGen(current+1)
+            operations.append(self.childs[0].val + "=" + prev_op)
         
         return op_level, current, subOperations + operations
     

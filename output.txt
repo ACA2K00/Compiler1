@@ -1,0 +1,7 @@
+floatdcl a
+intdcl b
+floatdcl c
+a=a
+b=b
+c=c
+print c

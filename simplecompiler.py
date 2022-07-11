@@ -170,7 +170,7 @@ tokens.append(scanner())
 # Call Parser
 treeRoot = prog()
 
-print("Tree: \n", treeRoot, "\n")
+print(treeRoot, "\n")
 
 # Code Gen
 operations = treeRoot.codeGen()
@@ -179,3 +179,4 @@ with open('output.txt', 'w') as f:
     for line in operations:
         f.write(line+'\n')
 
+print("TAC written to output.txt")
